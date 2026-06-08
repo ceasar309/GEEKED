@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role     String   @default("USER")
+  phone         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  addresses Address[]
+  orders    Order[]
+  reviews   Review[]
+  wishlist  Wishlist[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Role: USER, ADMIN
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  image    String?
+  products Product[]
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String
+  price         Float
+  comparePrice  Float?
+  costPrice     Float?
+  sku           String   @unique
+  brand         String?
+  gender        String?
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+  sizes         String  @default("")
+  colors        String  @default("")
+  tags          String  @default("")
+  images        ProductImage[]
+  stock         Int      @default(0)
+  isFeatured    Boolean  @default(false)
+  isNew         Boolean  @default(false)
+  isSale        Boolean  @default(false)
+  rating        Float    @default(0)
+  reviewCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orderItems OrderItem[]
+  reviews    Review[]
+  wishlist   Wishlist[]
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String?
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order     Int     @default(0)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Address {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String?
+  street     String
+  city       String
+  state      String
+  zip        String
+  country    String
+  isDefault  Boolean @default(false)
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  email         String
+  status        String        @default("PENDING")
+  items         OrderItem[]
+  subtotal      Float
+  tax           Float
+  shipping      Float         @default(0)
+  discount      Float         @default(0)
+  total         Float
+  couponCode    String?
+  shippingName  String?
+  shippingStreet String?
+  shippingCity  String?
+  shippingState String?
+  shippingZip   String?
+  shippingCountry String?
+  paymentMethod String?
+  paidAt        DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+// OrderStatus: PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  name      String
+  price     Float
+  quantity  Int
+  size      String?
+  color     String?
+  image     String?
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model Coupon {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  discount   Float
+  type       String   @default("PERCENTAGE")
+  minAmount  Float?
+  maxUses    Int?
+  usedCount  Int      @default(0)
+  expiresAt  DateTime?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+model HeroSlide {
+  id              String   @id @default(cuid())
+  imageUrl        String
+  title           String
+  subtitle        String?
+  buttonText      String?
+  buttonLink      String?
+  displayOrder    Int      @default(0)
+  isActive        Boolean  @default(true)
+  displayDuration Int      @default(5)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Video {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  videoUrl      String
+  thumbnailUrl  String?
+  category      String?
+  duration      String?
+  views         Int      @default(0)
+  isFeatured    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  publishDate   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  title     String?
+  imageUrl  String
+  link      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
